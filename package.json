@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "axios": "^0.19.2"
+  },
+  "prettier": {
+    "trailingComma": "es5",
+    "tabWidth": 4,
+    "semi": true,
+    "singleQuote": false
+  },
+  "devDependencies": {
+    "prettier": "^1.19.1"
+  }
+}
