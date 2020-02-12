@@ -11,7 +11,14 @@ $ docker build -t syts .
 $ docker run --rm -e "CS_API=http://localhost:8008" syts
 ```
 
-If you don't want to run in Docker, look at the Dockerfile for build pre-requisites/installation instructions.
+*If you're running on a Mac, use* `http://host.docker.internal:8008`
+
+If you don't want to run in Docker, look at the Dockerfile for the canonical build pre-requisites/installation instructions. The gist of it is:
+
+```
+$ yarn install
+$ CS_API=http://localhost:8008 yarn test
+```
 
 ### Development
 
