@@ -10,7 +10,7 @@
       ".(ts|tsx)": "ts-jest"
     },
     "testMatch": [
-      "**/src/**/*.ts"
+      "**/src/tests/**/*.ts"
     ],
     "moduleFileExtensions": [
       "ts",

@@ -1,10 +1,12 @@
 import axios from "axios";
+import Config from "../config";
+
+const cfg = new Config();
 
 describe("/register", () => {
     it("POST {} returns a set of flows", async () => {
-        // TODO: Indirect CS_API in case we want to inject it some other way
         const res = await axios.post(
-            process.env.CS_API + "/_matrix/client/r0/register",
+            cfg.HS1 + "/_matrix/client/r0/register",
             {},
             {
                 validateStatus: status => {
