@@ -1,0 +1,40 @@
+homeservers: [
+  {
+    name: "hs1",
+    users: [
+      {
+        localpart: "@alice",
+        display_name: "Alice",
+      },
+      {
+        localpart: "@bob",
+        display_name: "Bob"
+      }
+    ],
+    rooms: [
+      {
+        createRoom: {
+          preset: "private_chat",
+          invite: ["@bob:hs1"]
+        },
+        creator: "@alice",
+        events: [
+          {
+            type: "m.room.member",
+            state_key: "@bob:hs1",
+            content: { membership: "join" },
+            sender: "@bob"
+          },
+          {
+            type: "m.room.message",
+            content: {
+              body: "Hello world",
+              msgtype: "m.text"
+            },
+            sender: "@bob"
+          }
+        ]
+      }
+    ]
+  }
+]

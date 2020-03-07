@@ -1,0 +1,59 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Blueprint
+type: object
+properties:
+  homeservers:
+    type: array
+    items:
+      $ref: "#/definitions/homeserver"
+
+definitions:
+  homeserver:
+    type: object
+    required: [ "name" ]
+    properties:
+      name:
+        type: string
+      users:
+        type: array
+        items:
+          $ref: "#/definitions/user"
+      rooms:
+        type: array
+        items:
+          $ref: "#/definitions/room"
+  user:
+    type: object
+    required: [ "localpart" ]
+    properties:
+      localpart:
+        type: string
+      display_name:
+        type: string
+      avatar_url:
+        type: string
+  room:
+    type: object
+    required: [ "creator" ]
+    properties:
+      creator:
+        type: string
+      createRoom:
+        type: object
+      events:
+        type: array
+        items:
+          $ref: "#/definitions/event"
+  event:
+    type: object
+    required: [ "type", "sender" ]
+    properties:
+      type:
+        type: string
+      sender:
+        type: string
+      state_key:
+        type: string
+      content:
+        type: object
+      
