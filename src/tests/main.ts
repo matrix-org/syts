@@ -1,22 +1,21 @@
 import axios from "axios";
-import Builder from "../builder/builder";
-import { Construct } from "../construct";
+import { Deployment, Deployer } from "../deployer/deployer";
 
-const builder = new Builder();
-let construct: Construct;
+const deployer = new Deployer();
+let deployment: Deployment;
 
 describe("/register", () => {
     beforeEach(async () => {
-        construct = await builder.construct("clean_hs");
+        deployment = await deployer.deploy("clean_hs");
     });
 
     afterEach(async () => {
-        builder.destroy(construct);
+        deployer.destroy(deployment);
     });
 
     it("POST {} returns a set of flows", async () => {
         const res = await axios.post(
-            construct.url("hs1") + "/_matrix/client/r0/register",
+            deployment.url("hs1") + "/_matrix/client/r0/register",
             {},
             {
                 validateStatus: status => {

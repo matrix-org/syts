@@ -4,20 +4,18 @@ It's SyTest. In Typescript.
 
 ## Running
 
-You need to have a Synapse/Dendrite running first. Then:
+You need to have a Synapse/Dendrite running first on http://localhost:8008. Then:
 
 ```
 $ docker build -t syts .
-$ docker run --rm -e "SYTS_HS_URL_HS1=http://localhost:8008" syts
+$ docker run --rm -e "SYTS_BASE_HS_IMAGE=foo" syts
 ```
-
-*If you're running on a Mac, use* `http://host.docker.internal:8008`
 
 If you don't want to run in Docker, look at the Dockerfile for the canonical build pre-requisites/installation instructions. The gist of it is:
 
 ```
 $ yarn install
-$ SYTS_HS_URL_HS1=http://localhost:8008 yarn test
+$ SYTS_BASE_HS_IMAGE=foo yarn test
 ```
 
 ### Development

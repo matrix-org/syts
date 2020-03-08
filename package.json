@@ -1,26 +1,15 @@
 {
   "dependencies": {
+    "@types/dockerode": "^2.5.24",
     "@types/js-yaml": "^3.12.2",
     "ajv": "^6.12.0",
     "axios": "^0.19.2",
+    "dockerode": "^3.1.0",
     "jest": "^25.1.0",
     "js-yaml": "^3.13.1",
     "json-schema-to-typescript": "^8.1.0",
     "ts-jest": "^25.2.0",
     "typescript": "^3.7.5"
-  },
-  "jest": {
-    "transform": {
-      ".(ts|tsx)": "ts-jest"
-    },
-    "testMatch": [
-      "**/src/tests/**/*.ts"
-    ],
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js"
-    ]
   },
   "prettier": {
     "trailingComma": "es5",
