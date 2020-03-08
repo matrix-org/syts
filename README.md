@@ -8,7 +8,7 @@ You need to have a Synapse/Dendrite running first. Then:
 
 ```
 $ docker build -t syts .
-$ docker run --rm -e "CS_API=http://localhost:8008" syts
+$ docker run --rm -e "HS1_URL=http://localhost:8008" syts
 ```
 
 *If you're running on a Mac, use* `http://host.docker.internal:8008`
@@ -17,7 +17,7 @@ If you don't want to run in Docker, look at the Dockerfile for the canonical bui
 
 ```
 $ yarn install
-$ CS_API=http://localhost:8008 yarn test
+$ HS1_URL=http://localhost:8008 yarn test
 ```
 
 ### Development

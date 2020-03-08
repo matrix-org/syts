@@ -1,18 +1,12 @@
 import loadBlueprints from "./blueprints/loader/blueprint-loader";
 import { Blueprint } from "./blueprints/loader/blueprint";
+import { HSInfo, Construct } from "./construct";
 import * as Result from "./result";
 
 class Config {
-    public HS1: string = "http://localhost:8008";
-    public HS2: string = "http://localhost:8007";
-    public HS3: string = "http://localhost:8006";
-
     public blueprints: Map<string, Blueprint>;
 
     constructor() {
-        if (process.env.CS_API) {
-            this.HS1 = process.env.CS_API;
-        }
         const blueprints = loadBlueprints();
         if (Result.isError(blueprints)) {
             throw new Error(blueprints.message);
@@ -20,9 +14,27 @@ class Config {
         this.blueprints = blueprints;
     }
 
-    async load(blueprintName: string): Promise<Blueprint | undefined> {
-        return Promise.resolve(this.blueprints.get(blueprintName));
+    async construct(blueprintName: string): Promise<Construct> {
+        const blueprint = this.blueprints.get(blueprintName);
+        if (!blueprint) {
+            throw new Error(`No blueprint with name '${blueprintName}'`);
+        }
+        const construct = new Construct(blueprint);
+        blueprint.homeservers?.forEach(hs => {
+            const info = new HSInfo(hs.name);
+            const envVal = process.env[hs.name.toUpperCase() + "_URL"];
+            if (envVal) {
+                info.url = envVal;
+            } else {
+                info.url = "http://localhost:8008";
+            }
+            construct.setHomeserver(info);
+        });
+
+        return Promise.resolve(construct);
     }
+
+    async destroy(construct: Construct) {}
 }
 
 export default Config;

@@ -1,6 +1,6 @@
 ## Blueprints
 
-This directory contains a list of YAML files which tell SyTS how to set up and configure a given home server **prior** to test execution.
+This directory contains a list of YAML files (blueprints) which declares how a homeserver should be set up for an individual test.
 These blueprints dictate what the state the server should be in, **before** tests are run. Blueprints can include:
  - creating users.
  - creating rooms.
@@ -14,5 +14,4 @@ To see what is allowed in a blueprint, check the JSONSchema at `./loader/schema.
 
 ### Usage
 
-ParaSyTS will execute blueprints in a virgin homeserver container, snapshot them, then tear it down. When tests ask for a given blueprint,
-ParaSyTS will spin up that image in a fresh container and inject that container's configuration to the test.
+ParaSyTS is responsible for executing blueprints and delivering the corresponding HS URLs to each test.

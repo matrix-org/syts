@@ -1,13 +1,18 @@
 import axios from "axios";
 import Config from "../config";
+import { Construct } from "../construct";
 
 const cfg = new Config();
+let construct: Construct;
 
 describe("/register", () => {
+    beforeEach(async () => {
+        construct = await cfg.construct("clean_hs");
+    });
+
     it("POST {} returns a set of flows", async () => {
-        const blueprint = await cfg.load("clean_hs");
         const res = await axios.post(
-            cfg.HS1 + "/_matrix/client/r0/register",
+            construct.url("hs1") + "/_matrix/client/r0/register",
             {},
             {
                 validateStatus: status => {
