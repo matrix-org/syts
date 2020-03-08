@@ -2,7 +2,7 @@ import { Blueprint } from "./blueprints/loader/blueprint";
 
 export class Construct {
     public blueprint: Blueprint;
-    public hs: Map<string, HSInfo>;
+    public hs: Map<string, HSInfo>; // hs_name => HSInfo
 
     constructor(blueprint: Blueprint) {
         this.blueprint = blueprint;

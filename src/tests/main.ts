@@ -1,13 +1,17 @@
 import axios from "axios";
-import Config from "../config";
+import Builder from "../builder/builder";
 import { Construct } from "../construct";
 
-const cfg = new Config();
+const builder = new Builder();
 let construct: Construct;
 
 describe("/register", () => {
     beforeEach(async () => {
-        construct = await cfg.construct("clean_hs");
+        construct = await builder.construct("clean_hs");
+    });
+
+    afterEach(async () => {
+        builder.destroy(construct);
     });
 
     it("POST {} returns a set of flows", async () => {

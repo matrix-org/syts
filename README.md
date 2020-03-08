@@ -8,7 +8,7 @@ You need to have a Synapse/Dendrite running first. Then:
 
 ```
 $ docker build -t syts .
-$ docker run --rm -e "HS1_URL=http://localhost:8008" syts
+$ docker run --rm -e "SYTS_HS_URL_HS1=http://localhost:8008" syts
 ```
 
 *If you're running on a Mac, use* `http://host.docker.internal:8008`
@@ -17,7 +17,7 @@ If you don't want to run in Docker, look at the Dockerfile for the canonical bui
 
 ```
 $ yarn install
-$ HS1_URL=http://localhost:8008 yarn test
+$ SYTS_HS_URL_HS1=http://localhost:8008 yarn test
 ```
 
 ### Development
@@ -26,8 +26,6 @@ $ HS1_URL=http://localhost:8008 yarn test
 - `prettier` is the automatic code formatter (configure your IDE to format on save, look at `package.json` for the rules).
 
 ## Roadmap
-- Implement test framework
-- Implement dependent test framework
 - Implement variable sharing
 - Port tests over
 - Implement synapse/dendrite bootstrapping (probably as docker images with docker-compose?)

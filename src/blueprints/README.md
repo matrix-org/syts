@@ -14,4 +14,4 @@ To see what is allowed in a blueprint, check the JSONSchema at `./loader/schema.
 
 ### Usage
 
-ParaSyTS is responsible for executing blueprints and delivering the corresponding HS URLs to each test.
+Builder is responsible for executing blueprints and delivering the corresponding HS URLs to each test.
