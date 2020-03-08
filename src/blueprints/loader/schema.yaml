@@ -25,6 +25,7 @@ definitions:
   user:
     type: object
     required: [ "localpart" ]
+    additionalProperties: false
     properties:
       localpart:
         type: string
@@ -32,6 +33,15 @@ definitions:
         type: string
       avatar_url:
         type: string
+      account_data:
+        type: array
+        items:
+          type: object
+          properties:
+            type:
+              type: string
+            value:
+              type: object
   room:
     type: object
     required: [ "creator" ]

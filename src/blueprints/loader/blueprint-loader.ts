@@ -19,16 +19,18 @@ function validateBlueprint(data: Object) {
     }
 }
 
-function loadAllBlueprints(): Result.Type<Array<Blueprint>> {
+function loadAllBlueprints(): Result.Type<Map<string, Blueprint>> {
     try {
         const files = fs.readdirSync(__dirname + "/..");
-        return files
-            .filter(filePath => {
-                return filePath.endsWith(".yaml");
-            })
-            .map(blueprintPath => {
-                return loadBlueprint(__dirname + "/../" + blueprintPath);
-            });
+        const blueprintMap = new Map<string, Blueprint>();
+        for (let filePath of files) {
+            if (!filePath.endsWith(".yaml")) {
+                continue;
+            }
+            const blueprint = loadBlueprint(__dirname + "/../" + filePath);
+            blueprintMap.set(filePath.replace(".yaml", ""), blueprint);
+        }
+        return blueprintMap;
     } catch (err) {
         return err;
     }

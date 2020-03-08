@@ -19,7 +19,13 @@ export interface User {
   localpart: string;
   display_name?: string;
   avatar_url?: string;
-  [k: string]: any;
+  account_data?: {
+    type?: string;
+    value?: {
+      [k: string]: any;
+    };
+    [k: string]: any;
+  }[];
 }
 export interface Room {
   creator: string;

@@ -5,6 +5,7 @@ const cfg = new Config();
 
 describe("/register", () => {
     it("POST {} returns a set of flows", async () => {
+        const blueprint = await cfg.load("clean_hs");
         const res = await axios.post(
             cfg.HS1 + "/_matrix/client/r0/register",
             {},
