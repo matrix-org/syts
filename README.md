@@ -216,4 +216,4 @@ tests/90jira/SYN-627.pl:
 
 Having a comprehensive black box test suite for Homeservers is tremendously valuable for the Matrix ecosystem. Ideally, every feature/bugfix would feature a test or two in said test suite to give people confidence in merging new PRs. However, not many people in the ecosystem are comfortable writing Perl, which puts up a huge barrier to entry for new contributors. This project aims to fix this by rewriting the codebase in Typescript, which is far more accessible and has the benefit of static typing. This will be a tremendous aid for Synapse and Dendrite work.
 
-The architecture for this project is available at [src/sytestEnvironment.ts](src/sytestEnvironment.ts).
+The architecture for this project is available at [src/sytsEnvironment.ts](src/sytsEnvironment.ts).
