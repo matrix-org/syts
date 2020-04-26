@@ -78,7 +78,7 @@ class DockerBuilder {
         const docker = new Docker({ socketPath: this.dockerSock });
         const server = await this._deployBaseImage(docker, contextStr);
         try {
-            const runner = new InstructionRunner(hs);
+            const runner = new InstructionRunner(hs, contextStr);
             await runner.run(server.baseUrl);
 
             const imageId = await this._commitImage(
@@ -164,7 +164,6 @@ class DockerBuilder {
             repo: "syts",
             tag: contextStr,
         });
-        console.log(r);
         const imageId: string = r["Id"];
         return imageId.replace("sha256:", "");
     }

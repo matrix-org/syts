@@ -1,5 +1,5 @@
 import { Homeserver } from "./blueprint";
-import axios, { Method } from "axios";
+import axios, { Method, AxiosResponse } from "axios";
 
 // Instruction represents an HTTP request which should be made to a remote server
 type Instruction = {
@@ -13,8 +13,9 @@ type Instruction = {
     // The access_token to use in the request, represented as a key to use in the lookup table e.g "user_@alice:localhost"
     // Null if no token should be used (e.g /register requests).
     access_token: string | null;
-    // The path or query placeholders to replace e.g "/foo/$roomId" with the substitution { $roomId: "room_1"}.
-    // The key is the path param e.g $foo and the value is the lookup table key e.g "room_id".
+    // The path or query placeholders to replace e.g "/foo/$roomId" with the substitution { $roomId: ".room_1"}.
+    // The key is the path param e.g $foo and the value is the lookup table key e.g ".room_id". If the value does not
+    // start with a '.' it is interpreted as a literal string to be substituted. e.g { $eventType: "m.room.message" }
     substitutions?: Record<string, string>;
     // The fields (expressed as dot-style notation) which should be stored in a lookup table for later use.
     // E.g to store the room_id in the response under the key 'foo' to use it later: { "foo" : ".room_id" }
@@ -34,43 +35,46 @@ export class InstructionRunner {
     instructions: Array<Instruction>;
     lookup: { [key: string]: string };
     index: number;
+    contextStr: string;
 
-    constructor(hs: Homeserver) {
+    constructor(hs: Homeserver, contextStr: string) {
         this.instructions = calculateInstructions(hs);
         this.lookup = {};
         this.index = 0;
+        this.contextStr = contextStr;
     }
 
     // Run all instructions until completion. Throws if there was a problem executing any instruction.
     async run(baseUrl: string) {
         let entry = this.next(baseUrl);
         while (entry != undefined) {
+            let response: AxiosResponse;
             try {
-                const response = await axios.request(entry.req);
-                if (response.status < 200 || response.status >= 300) {
-                    throw new Error(
-                        `Request ${JSON.stringify(entry.req)} returned HTTP ${
-                            response.status
-                        } : ${response.data}`
-                    );
-                }
-
-                if (entry.instr.storeResponse) {
-                    for (let [key, value] of Object.entries(
-                        entry.instr.storeResponse
-                    )) {
-                        this.lookup[key] = mapDotStyleKey(response.data, value);
-                    }
-                }
+                response = await axios.request(entry.req);
             } catch (err) {
-                console.error(
-                    `Error: ${JSON.stringify(entry.req)} returned =====> HTTP ${
-                        err.response.status
-                    } => ${JSON.stringify(err.response.data)}`
-                );
+                response = err.response;
+            }
+            console.log(
+                `${this.contextStr} [${entry.instr.access_token}] ${entry.req.url} => HTTP ${response.status}`
+            );
+            if (response.status < 200 || response.status >= 300) {
+                console.log("LOOKUP : " + JSON.stringify(this.lookup));
+                console.log("INSTRUCTION: " + JSON.stringify(entry.instr));
                 throw new Error(
-                    `Failed to execute HTTP requests on ${baseUrl}`
+                    `${this.contextStr} Request ${JSON.stringify(
+                        entry.req
+                    )} returned HTTP ${response.status} : ${JSON.stringify(
+                        response.data
+                    )}`
                 );
+            }
+
+            if (entry.instr.storeResponse) {
+                for (let [key, value] of Object.entries(
+                    entry.instr.storeResponse
+                )) {
+                    this.lookup[key] = mapDotStyleKey(response.data, value);
+                }
             }
             entry = this.next(baseUrl);
         }
@@ -113,7 +117,7 @@ function calculateInstructions(hs: Homeserver): Array<Instruction> {
     // add instructions to create users
     hs.users?.forEach((user) => {
         const storeRes: { [key: string]: string } = {};
-        storeRes[`user_${user.localpart}`] = ".access_token";
+        storeRes[`user_@${user.localpart}:${hs.name}`] = ".access_token";
 
         instructions.push({
             method: "POST",
@@ -143,20 +147,32 @@ function calculateInstructions(hs: Homeserver): Array<Instruction> {
         });
         room.events?.forEach((event, eventIndex) => {
             let path = "";
+            let method: Method = "PUT";
             const subs: { [key: string]: string } = {};
-            subs["roomId"] = `room_${roomIndex}`;
-            subs["eventType"] = event.type;
+            subs["$roomId"] = `.room_${roomIndex}`;
+            subs["$eventType"] = event.type;
             if (event.state_key != null) {
                 path =
-                    "/_matrix/client/r0/rooms/{roomId}/state/{eventType}/{stateKey}";
-                subs["stateKey"] = `${event.state_key}`;
+                    "/_matrix/client/r0/rooms/$roomId/state/$eventType/$stateKey";
+                subs["$stateKey"] = `${event.state_key}`;
             } else {
                 path =
-                    "/_matrix/client/r0/rooms/{roomId}/send/{eventType}/{txnId}";
-                subs["txnId"] = `${eventIndex}`;
+                    "/_matrix/client/r0/rooms/$roomId/send/$eventType/$txnId";
+                subs["$txnId"] = `${eventIndex}`;
             }
+
+            // special cases: room joining
+            if (
+                event.type === "m.room.member" &&
+                event.content &&
+                event.content.membership === "join"
+            ) {
+                path = "/_matrix/client/r0/join/$roomId";
+                method = "POST";
+            }
+
             instructions.push({
-                method: "PUT",
+                method: method,
                 path: path,
                 body: JSON.stringify(room.createRoom),
                 access_token: `user_${event.sender}`,
@@ -187,9 +203,15 @@ function encodeUri(
         if (!variables.hasOwnProperty(key)) {
             continue;
         }
+        const lookupKey = variables[key];
+        // if the variable start with a '.' then use the lookup table, else use the string literally
+        // this handles scenarios like:
+        // { $roomId: ".room_0", $eventType: "m.room.message" }
+        const valToEncode =
+            lookupKey[0] === "." ? lookup[lookupKey.substr(1)] : lookupKey;
         pathTemplate = pathTemplate.replace(
             key,
-            encodeURIComponent(lookup[variables[key]])
+            encodeURIComponent(valToEncode)
         );
     }
     return pathTemplate;

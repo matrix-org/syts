@@ -14,7 +14,7 @@ homeservers: [
     rooms: [
       {
         createRoom: {
-          preset: "private_chat",
+          preset: "public_chat",
           invite: ["@bob:hs1"]
         },
         creator: "@alice",

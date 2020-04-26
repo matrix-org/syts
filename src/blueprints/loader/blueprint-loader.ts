@@ -54,10 +54,17 @@ function normaliseLocalpartToCompleteUserID(
 function resolveUserIds(blueprint: Blueprint) {
     blueprint.homeservers?.forEach((hs) => {
         hs.users?.forEach((user) => {
-            user.localpart = normaliseLocalpartToCompleteUserID(
-                user.localpart,
-                hs.name
-            );
+            if (user.localpart[0] !== "@") {
+                throw new Error(
+                    `HS ${hs.name} User ${user.localpart} must start with '@'`
+                );
+            }
+            if (user.localpart.includes(":")) {
+                throw new Error(
+                    `HS ${hs.name} User ${user.localpart} must not contain a domain`
+                );
+            }
+            user.localpart = user.localpart.replace("@", "");
         });
         hs.rooms?.forEach((room) => {
             room.creator = normaliseLocalpartToCompleteUserID(
