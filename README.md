@@ -4,7 +4,8 @@ It's SyTest. In Typescript.
 
 ## Running
 
-You need to have a Synapse/Dendrite running first on http://localhost:8008. Then:
+You need to have Docker installed as SyTS uses it liberally to spin up and tear down homeservers.
+You can run SyTS in Docker as well, or on your machine.
 
 ```
 $ docker build -t syts .
@@ -18,16 +19,22 @@ $ yarn install
 $ SYTS_BASE_HS_IMAGE=foo yarn test
 ```
 
+### Args
+```
+SYTS_BASE_HS_IMAGE        Required. The name of the image which will run a homeserver
+SYTS_BASE_HS_IMAGE_ARGS   Optional. Space separated args to pass to the image when running
+SYTS_DOCKER_SOCK          Optional. The docker socket to bind to.
+```
+
 ### Development
 
 - `yarn` is the package manager.
 - `prettier` is the automatic code formatter (configure your IDE to format on save, look at `package.json` for the rules).
 
 ## Roadmap
-- Implement variable sharing
-- Port tests over
-- Implement synapse/dendrite bootstrapping (probably as docker images with docker-compose?)
-- Implement parallelisation e.g `-j4` for 4x servers and `i%4` for test allocation (after satisfying dependencies)
+- Run basic tests which require few if any SyTest "fixtures".
+- Convert fixtures to blueprints.
+- Set up Docker networking for federation.
 
 Desirable features:
 - Parallelisation for speed (run multiple servers)
@@ -209,6 +216,4 @@ tests/90jira/SYN-627.pl:
 
 Having a comprehensive black box test suite for Homeservers is tremendously valuable for the Matrix ecosystem. Ideally, every feature/bugfix would feature a test or two in said test suite to give people confidence in merging new PRs. However, not many people in the ecosystem are comfortable writing Perl, which puts up a huge barrier to entry for new contributors. This project aims to fix this by rewriting the codebase in Typescript, which is far more accessible and has the benefit of static typing. This will be a tremendous aid for Synapse and Dendrite work.
 
-The architecture for this project is as follows:
- - SyTS just points to a URL and is told which numbered tests to run. It doesn't know how to spin up homeservers and doesn't know how to parallelise. You can point it at localhost and tell it to run all the tests and that will work just fine. Alternatively, you can just tell it to run a single test and it'll know how to do that with dependencies on other tests. The idea is that this will be used by individuals who want to run a new test they are working on.
- - paraSyTS is the distributed form of SyTS, and also has a delightful pronunciation. It knows how to spin up homeservers and SyTS instances. It has a configurable amount of parallelisation (e.g make style `-j4`) and will try to optimise load across these servers. It knows how to aggregate responses into a full report. The idea is that CI will run this, with major speed savings on beefier boxes.
+The architecture for this project is available at [src/sytestEnvironment.ts](src/sytestEnvironment.ts).
