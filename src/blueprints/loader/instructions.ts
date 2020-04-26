@@ -24,6 +24,7 @@ type Instruction = {
 // HSRequest is an HTTP request whch can be sent via Axios as-is, or can be transformed to curl etc.
 interface HSRequest {
     url: string;
+    baseURL: string;
     method: Method;
     params: { [key: string]: string }; // query params
     data: any;
@@ -42,31 +43,41 @@ export class InstructionRunner {
 
     // Run all instructions until completion. Throws if there was a problem executing any instruction.
     async run(baseUrl: string) {
-        let entry = this.next();
+        let entry = this.next(baseUrl);
         while (entry != undefined) {
-            const response = await axios.request(entry.req);
-            if (response.status < 200 || response.status >= 300) {
+            try {
+                const response = await axios.request(entry.req);
+                if (response.status < 200 || response.status >= 300) {
+                    throw new Error(
+                        `Request ${JSON.stringify(entry.req)} returned HTTP ${
+                            response.status
+                        } : ${response.data}`
+                    );
+                }
+
+                if (entry.instr.storeResponse) {
+                    for (let [key, value] of Object.entries(
+                        entry.instr.storeResponse
+                    )) {
+                        this.lookup[key] = mapDotStyleKey(response.data, value);
+                    }
+                }
+            } catch (err) {
+                console.error(
+                    `Error: ${JSON.stringify(entry.req)} returned =====> HTTP ${
+                        err.response.status
+                    } => ${JSON.stringify(err.response.data)}`
+                );
                 throw new Error(
-                    `Request ${JSON.stringify(entry.req)} returned HTTP ${
-                        response.status
-                    }`
+                    `Failed to execute HTTP requests on ${baseUrl}`
                 );
             }
-
-            if (entry.instr.storeResponse) {
-                for (let [key, value] of Object.entries(
-                    entry.instr.storeResponse
-                )) {
-                    this.lookup[key] = mapDotStyleKey(response.data, value);
-                }
-            }
-
-            entry = this.next();
+            entry = this.next(baseUrl);
         }
     }
 
     // Returns the next instruction as an Axios-style request object.
-    next(): { req: HSRequest; instr: Instruction } | undefined {
+    next(baseUrl: string): { req: HSRequest; instr: Instruction } | undefined {
         if (this.index >= this.instructions.length) {
             return;
         }
@@ -84,6 +95,7 @@ export class InstructionRunner {
                     instr.substitutions || {},
                     this.lookup
                 ),
+                baseURL: baseUrl,
                 method: instr.method,
                 data: instr.body,
                 params: qps,
