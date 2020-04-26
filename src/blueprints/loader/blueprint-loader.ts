@@ -1,5 +1,4 @@
 import Ajv from "ajv";
-import * as Result from "../../result";
 import fs from "fs";
 import yaml from "js-yaml";
 import { Blueprint } from "./blueprint";
@@ -14,60 +13,67 @@ const validate = ajv.compile(schemaJSON);
 function validateBlueprint(data: Object) {
     const valid = validate(data);
     if (!valid) {
-        const errs = validate.errors?.map(err => err.message);
+        const errs = validate.errors?.map((err) => err.message);
         throw new Error(errs?.join("\n"));
     }
 }
 
-function loadAllBlueprints(): Result.Type<Map<string, Blueprint>> {
-    try {
-        const files = fs.readdirSync(__dirname + "/..");
-        const blueprintMap = new Map<string, Blueprint>();
-        for (let filePath of files) {
-            if (!filePath.endsWith(".yaml")) {
-                continue;
-            }
-            const blueprint = loadBlueprint(__dirname + "/../" + filePath);
-            blueprintMap.set(filePath.replace(".yaml", ""), blueprint);
+function loadAllBlueprints(): Map<string, Blueprint> {
+    const files = fs.readdirSync(__dirname + "/..");
+    const blueprintMap = new Map<string, Blueprint>();
+    for (let filePath of files) {
+        if (!filePath.endsWith(".yaml")) {
+            continue;
         }
-        return blueprintMap;
-    } catch (err) {
-        return err;
+        const blueprint = loadBlueprint(__dirname + "/../" + filePath);
+        blueprintMap.set(filePath.replace(".yaml", ""), blueprint);
     }
+    return blueprintMap;
 }
 
-function sanityCheckUserLocalpart(localpart: string, hsName: string) {
+function normaliseLocalpartToCompleteUserID(
+    localpart: string,
+    hsName: string
+): string {
     // if they did it as @foo:bar make sure :bar is the name of the HS
     if (localpart.includes(":")) {
         if (localpart.endsWith(`:${hsName}`)) {
-            return;
+            return localpart;
         }
         throw new Error(
             `HS '${hsName}' User '${localpart}' must end with ':${hsName}' or have no domain`
         );
     }
+    if (!localpart.includes(":")) {
+        localpart += `:${hsName}`;
+    }
+    return localpart;
 }
 
 // We allow user IDs of the form '@alice' or '@alice:hsname' but we want a standard format in code, the long form.
 function resolveUserIds(blueprint: Blueprint) {
-    blueprint.homeservers?.forEach(hs => {
-        hs.users?.forEach(user => {
-            sanityCheckUserLocalpart(user.localpart, hs.name);
-            if (!user.localpart.includes(":")) {
-                user.localpart += `:${hs.name}`;
-            }
+    blueprint.homeservers?.forEach((hs) => {
+        hs.users?.forEach((user) => {
+            user.localpart = normaliseLocalpartToCompleteUserID(
+                user.localpart,
+                hs.name
+            );
         });
-        hs.rooms?.forEach(room => {
-            room.events?.forEach(event => {
-                sanityCheckUserLocalpart(event.sender, hs.name);
-                if (!event.sender.includes(":")) {
-                    event.sender += `:${hs.name}`;
-                }
+        hs.rooms?.forEach((room) => {
+            room.creator = normaliseLocalpartToCompleteUserID(
+                room.creator,
+                hs.name
+            );
+            room.events?.forEach((event) => {
+                event.sender = normaliseLocalpartToCompleteUserID(
+                    event.sender,
+                    hs.name
+                );
                 if (event.type == "m.room.member" && event.state_key) {
-                    sanityCheckUserLocalpart(event.state_key, hs.name);
-                    if (!event.state_key.includes(":")) {
-                        event.state_key += `:${hs.name}`;
-                    }
+                    event.state_key = normaliseLocalpartToCompleteUserID(
+                        event.state_key,
+                        hs.name
+                    );
                 }
             });
         });

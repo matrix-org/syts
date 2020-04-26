@@ -20,18 +20,15 @@ test process                                      |                     |
 
 import DockerBuilder from "./builder/docker";
 import loadBlueprints from "./blueprints/loader/blueprint-loader";
-import * as Result from "./result";
 
 // TODO: Buiild all blueprints and commit images for them.
 
-module.exports = async function() {
+module.exports = async function () {
     console.log("Loading and building all blueprints...");
     const blueprints = loadBlueprints();
-    if (Result.isError(blueprints)) {
-        throw new Error(blueprints.message);
-    }
     const builder = new DockerBuilder(
         process.env["SYTS_BASE_HS_IMAGE"],
+        process.env["SYTS_BASE_HS_IMAGE_ARGS"]?.split(" "),
         process.env["SYTS_DOCKER_SOCK"]
     );
     await builder.constructBlueprints(blueprints);
