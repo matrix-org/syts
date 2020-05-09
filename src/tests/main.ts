@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Deployment, Deployer } from "../deployer/deployer";
+import { Deployment, Deployer } from "../deployer/docker";
 import { setupDocker, teardownDocker } from "../sytsEnvironment";
 
 const deployer = new Deployer();
