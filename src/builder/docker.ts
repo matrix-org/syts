@@ -7,6 +7,7 @@ import Axios from "axios";
  * DockerBuilder knows how to build blueprints into images.
  */
 class DockerBuilder {
+    private docker: Docker;
     public baseImage: string;
     public dockerSock: string;
     public imageCmd: string[];
@@ -34,6 +35,7 @@ class DockerBuilder {
         if (imageCmd) {
             this.imageCmd = imageCmd;
         }
+        this.docker = new Docker({ socketPath: this.dockerSock });
     }
 
     /**
@@ -47,6 +49,53 @@ class DockerBuilder {
         });
 
         await Promise.all(promises);
+    }
+
+    async cleanup() {
+        // wait a bit for images/containers to show up
+        await sleep(5000);
+        const containerInfos = await this.docker.listContainers({
+            all: true,
+            filters: {
+                label: ["syts_context"],
+            },
+        });
+        for (let i = 0; i < containerInfos.length; i++) {
+            const c = await this.docker.getContainer(containerInfos[i].Id);
+            console.log(
+                "Removing container ",
+                containerInfos[i].Labels["syts_context"]
+            );
+            try {
+                await c.stop();
+            } catch (err) {
+                // might fail if the HS terminated itself in the test,
+                // so silently drop errors.
+            }
+            try {
+                await c.remove();
+            } catch (err) {
+                // don't drop errors here as we should always be able to remove
+                // containers.
+                console.log("failed to remove container:", err);
+            }
+        }
+        const imageInfos = await this.docker.listImages({
+            filters: {
+                label: ["syts_context"],
+            },
+        });
+
+        let rmImages: Array<Promise<any>> = [];
+        for (let i = 0; i < imageInfos.length; i++) {
+            console.log(
+                "Removing image ",
+                imageInfos[i].Labels["syts_context"]
+            );
+            const image = this.docker.getImage(imageInfos[i].Id);
+            rmImages.push(image.remove());
+        }
+        await Promise.all(rmImages);
     }
 
     async _construct(
@@ -75,8 +124,7 @@ class DockerBuilder {
     ): Promise<Boolean> {
         const contextStr = `${blueprintName}.${hs.name}`;
         console.log(`Building ${contextStr}...`);
-        const docker = new Docker({ socketPath: this.dockerSock });
-        const server = await this._deployBaseImage(docker, contextStr);
+        const server = await this._deployBaseImage(contextStr);
         try {
             const runner = new InstructionRunner(hs, contextStr);
             await runner.run(server.baseUrl);
@@ -97,14 +145,16 @@ class DockerBuilder {
 
     // run the base image and return the base URL to hit for instructions
     async _deployBaseImage(
-        docker: Docker,
         contextStr: string
     ): Promise<{ baseUrl: string; container: Docker.Container }> {
         // spin up the base image
-        const container = await docker.createContainer({
+        const container = await this.docker.createContainer({
             Image: this.baseImage,
             Cmd: this.imageCmd,
             name: "syts_" + contextStr,
+            Labels: {
+                syts_context: contextStr,
+            },
             HostConfig: {
                 PublishAllPorts: true,
             },

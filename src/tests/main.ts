@@ -1,8 +1,17 @@
 import axios from "axios";
 import { Deployment, Deployer } from "../deployer/deployer";
+import { setupDocker, teardownDocker } from "../sytsEnvironment";
 
 const deployer = new Deployer();
 let deployment: Deployment;
+
+// TODO: when https://github.com/facebook/jest/pull/8751 merges, rely on the environment instead.
+beforeAll(() => {
+    return setupDocker();
+});
+afterAll(() => {
+    return teardownDocker();
+});
 
 describe("/register", () => {
     beforeEach(async () => {
@@ -18,7 +27,7 @@ describe("/register", () => {
             deployment.url("hs1") + "/_matrix/client/r0/register",
             {},
             {
-                validateStatus: status => {
+                validateStatus: (status) => {
                     return status === 401;
                 },
             }

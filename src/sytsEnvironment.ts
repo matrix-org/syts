@@ -31,10 +31,11 @@ test process                                      |                     |
 
 */
 
+let builder: DockerBuilder;
 const setupDocker = async function () {
     console.log("Loading and building all blueprints...");
     const blueprints = loadBlueprints();
-    const builder = new DockerBuilder(
+    builder = new DockerBuilder(
         process.env["SYTS_BASE_HS_IMAGE"],
         process.env["SYTS_BASE_HS_IMAGE_ARGS"]?.split(" "),
         process.env["SYTS_DOCKER_SOCK"]
@@ -43,8 +44,7 @@ const setupDocker = async function () {
 };
 
 const teardownDocker = async function () {
-    // TODO delete running containers
-    // TODO delete created images
+    await builder.cleanup();
 };
 
 class SytsEnvironment extends NodeEnvironment {
@@ -64,3 +64,4 @@ class SytsEnvironment extends NodeEnvironment {
 }
 
 export default SytsEnvironment;
+export { teardownDocker, setupDocker };

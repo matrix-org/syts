@@ -7,5 +7,5 @@ module.exports = {
         "**/src/tests/**/*.ts"
     ],
     moduleFileExtensions: ["ts", "tsx", "js"],
-    testEnvironment: "<rootDir>/src/sytsEnvironment.ts",
+    //testEnvironment: "<rootDir>/src/sytsEnvironment.ts",
 }
