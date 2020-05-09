@@ -5,9 +5,11 @@ import { stringify } from "querystring";
 export class DockerDeployer {
     private docker: Docker;
     public namespace: string;
+    private counter: number;
     constructor(namespace: string) {
         this.docker = new Docker();
         this.namespace = namespace;
+        this.counter = 0;
     }
 
     async deploy(blueprintName: string): Promise<Deployment> {
@@ -25,10 +27,11 @@ export class DockerDeployer {
         }
         const d = new Deployment(blueprintName);
         for (let i = 0; i < imageInfos.length; i++) {
+            this.counter++;
             const contextStr = imageInfos[i].Labels["syts_context"];
             const hs = await this._runImage(
                 imageInfos[i].Id,
-                `syts_${this.namespace}_${contextStr}`,
+                `syts_${this.namespace}_${contextStr}_${this.counter}`,
                 contextStr,
                 blueprintName,
                 imageInfos[i].Labels["syts_hs_name"],
