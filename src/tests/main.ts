@@ -1,8 +1,8 @@
 import axios from "axios";
-import { Deployment, Deployer } from "../deployer/docker";
+import { Deployment, DockerDeployer } from "../deployer/docker";
 import { setupDocker, teardownDocker } from "../sytsEnvironment";
 
-const deployer = new Deployer();
+const deployer = new DockerDeployer("register");
 let deployment: Deployment;
 
 // TODO: when https://github.com/facebook/jest/pull/8751 merges, rely on the environment instead.
@@ -19,7 +19,7 @@ describe("/register", () => {
     });
 
     afterEach(async () => {
-        deployer.destroy(deployment);
+        await deployer.destroy(deployment);
     });
 
     it("POST {} returns a set of flows", async () => {

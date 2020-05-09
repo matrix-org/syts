@@ -40,6 +40,7 @@ const setupDocker = async function () {
         process.env["SYTS_BASE_HS_IMAGE_ARGS"]?.split(" "),
         process.env["SYTS_DOCKER_SOCK"]
     );
+    await builder.cleanup(); // in case we failed before
     await builder.constructBlueprints(blueprints);
 };
 

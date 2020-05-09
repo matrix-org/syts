@@ -49,37 +49,24 @@ class DockerBuilder {
         });
 
         await Promise.all(promises);
+        // wait a bit for images/containers to show up in 'image ls'
+        for (let i = 0; i < 50; i++) {
+            const imageInfos = await this.docker.listImages({
+                filters: {
+                    label: ["syts_context"],
+                },
+            });
+            if (imageInfos.length < promises.length) {
+                await sleep(100);
+            } else {
+                break;
+            }
+        }
     }
 
     async cleanup() {
-        // wait a bit for images/containers to show up
-        await sleep(5000);
-        const containerInfos = await this.docker.listContainers({
-            all: true,
-            filters: {
-                label: ["syts_context"],
-            },
-        });
-        for (let i = 0; i < containerInfos.length; i++) {
-            const c = await this.docker.getContainer(containerInfos[i].Id);
-            console.log(
-                "Removing container ",
-                containerInfos[i].Labels["syts_context"]
-            );
-            try {
-                await c.stop();
-            } catch (err) {
-                // might fail if the HS terminated itself in the test,
-                // so silently drop errors.
-            }
-            try {
-                await c.remove();
-            } catch (err) {
-                // don't drop errors here as we should always be able to remove
-                // containers.
-                console.log("failed to remove container:", err);
-            }
-        }
+        console.log("cleaning up...");
+        await this.removeContainers();
         const imageInfos = await this.docker.listImages({
             filters: {
                 label: ["syts_context"],
@@ -93,9 +80,34 @@ class DockerBuilder {
                 imageInfos[i].Labels["syts_context"]
             );
             const image = this.docker.getImage(imageInfos[i].Id);
-            rmImages.push(image.remove());
+            rmImages.push(
+                image.remove({
+                    force: true,
+                })
+            );
         }
         await Promise.all(rmImages);
+    }
+
+    async removeContainers() {
+        const containerInfos = await this.docker.listContainers({
+            all: true,
+            filters: {
+                label: ["syts_context"],
+            },
+        });
+        for (let i = 0; i < containerInfos.length; i++) {
+            const c = await this.docker.getContainer(containerInfos[i].Id);
+            console.log(
+                "Removing container ",
+                containerInfos[i].Labels["syts_context"]
+            );
+            try {
+                await c.remove({
+                    force: true,
+                });
+            } catch (err) {}
+        }
     }
 
     async _construct(
@@ -106,9 +118,6 @@ class DockerBuilder {
             throw new Error(
                 `Blueprint with name '${blueprintName}' is missing homeservers`
             );
-        }
-        if (blueprintName == "clean_hs") {
-            return true;
         }
         let promises: Array<Promise<Boolean>> = [];
         for (let hs of blueprint.homeservers) {
@@ -124,12 +133,16 @@ class DockerBuilder {
     ): Promise<Boolean> {
         const contextStr = `${blueprintName}.${hs.name}`;
         console.log(`Building ${contextStr}...`);
-        const server = await this._deployBaseImage(contextStr);
+        const server = await this._deployBaseImage(
+            contextStr,
+            blueprintName,
+            hs.name
+        );
         try {
             const runner = new InstructionRunner(hs, contextStr);
             await runner.run(server.baseUrl);
 
-            const imageId = await this._commitImage(
+            const imageId = await this._commitContainerAndCleanup(
                 server.container,
                 contextStr
             );
@@ -145,7 +158,9 @@ class DockerBuilder {
 
     // run the base image and return the base URL to hit for instructions
     async _deployBaseImage(
-        contextStr: string
+        contextStr: string,
+        blueprintName: string,
+        hsName: string
     ): Promise<{ baseUrl: string; container: Docker.Container }> {
         // spin up the base image
         const container = await this.docker.createContainer({
@@ -154,6 +169,8 @@ class DockerBuilder {
             name: "syts_" + contextStr,
             Labels: {
                 syts_context: contextStr,
+                syts_blueprint: blueprintName,
+                syts_hs_name: hsName,
             },
             HostConfig: {
                 PublishAllPorts: true,
@@ -204,7 +221,7 @@ class DockerBuilder {
     }
 
     // Resolves to a new image ID
-    async _commitImage(
+    async _commitContainerAndCleanup(
         container: Docker.Container,
         contextStr: string
     ): Promise<string> {
@@ -214,6 +231,12 @@ class DockerBuilder {
             repo: "syts",
             tag: contextStr,
         });
+        /*
+        try {
+            await container.remove({
+                force: true,
+            });
+        } catch (err) {} */
         const imageId: string = r["Id"];
         return imageId.replace("sha256:", "");
     }
