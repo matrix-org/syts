@@ -65,7 +65,6 @@ class DockerBuilder {
     }
 
     async cleanup() {
-        console.log("cleaning up...");
         await this.removeContainers();
         const imageInfos = await this.docker.listImages({
             filters: {

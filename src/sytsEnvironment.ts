@@ -33,7 +33,7 @@ test process                                      |                     |
 
 let builder: DockerBuilder;
 const setupDocker = async function () {
-    console.log("Loading and building all blueprints...");
+    console.log("[Global Setup] Loading and building all blueprints...");
     const blueprints = loadBlueprints();
     builder = new DockerBuilder(
         process.env["SYTS_BASE_HS_IMAGE"],
@@ -42,10 +42,13 @@ const setupDocker = async function () {
     );
     await builder.cleanup(); // in case we failed before
     await builder.constructBlueprints(blueprints);
+    console.log("[Global Setup] complete!");
 };
 
 const teardownDocker = async function () {
+    console.log("[Global Teardown] Cleaning up containers and images...");
     await builder.cleanup();
+    console.log("[Global Teardown] complete!");
 };
 
 class SytsEnvironment extends NodeEnvironment {
